@@ -1,0 +1,58 @@
+# AI狼人杀 - 游戏配置
+# 9人局：3狼人 + 1预言家 + 1女巫 + 1猎人 + 3村民
+
+game:
+  total_players: 9
+  roles:
+    werewolf: 3
+    seer: 1
+    witch: 1
+    hunter: 1
+    villager: 3
+
+models:
+  player_1:
+    model: "gpt-4o"
+    name: "阿波罗"
+    personality: "冷静理性，擅长逻辑推理，喜欢用数据说话，发言克制精准"
+  player_2:
+    model: "gpt-4o"
+    name: "雅典娜"
+    personality: "智慧果断，善于观察细节，喜欢引导讨论方向，有领导力"
+  player_3:
+    model: "claude-sonnet-4-20250514"
+    name: "赫耳墨斯"
+    personality: "机智灵活，善于言辞，喜欢煽动气氛，擅长转移话题和制造混乱"
+  player_4:
+    model: "claude-sonnet-4-20250514"
+    name: "阿瑞斯"
+    personality: "强势激进，喜欢主动出击，发言犀利直接，不怕得罪人"
+  player_5:
+    model: "deepseek/deepseek-chat"
+    name: "李白"
+    personality: "随性洒脱，发言天马行空，喜欢用比喻和典故，不按常理出牌"
+  player_6:
+    model: "deepseek/deepseek-chat"
+    name: "杜甫"
+    personality: "沉稳谨慎，注重证据链，发言有条理，不轻易下结论"
+  player_7:
+    model: "openrouter/qwen/qwen-2.5-72b-instruct"
+    name: "孔明"
+    personality: "运筹帷幄，善于分析全局局势，喜欢长线布局，发言高瞻远瞩"
+  player_8:
+    model: "ollama/qwen3:8b"
+    name: "宝玉"
+    personality: "感性多疑，容易受情绪影响，发言优柔寡断但观察力敏锐"
+  player_9:
+    model: "ollama/qwen3:8b"
+    name: "黛玉"
+    personality: "敏感细腻，善于捕捉他人话语中的矛盾，发言犀利但含蓄"
+
+llm:
+  max_retries: 3
+  temperature: 0.7
+  max_tokens: 512
+
+output:
+  reports_dir: "reports"
+  verbose: false
