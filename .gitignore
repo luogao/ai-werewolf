@@ -1,9 +1,34 @@
+# Python (legacy)
 __pycache__/
 *.pyc
 *.pyo
 .pytest_cache/
-reports/
 *.egg-info/
 dist/
 build/
 .venv/
+legacy-python/
+
+# Node / Next.js
+node_modules/
+.next/
+out/
+build/
+*.tsbuildinfo
+next-env.d.ts
+
+# Data
+reports/
+data/
+*.db
+*.db-journal
+
+# Env
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+.DS_Store
