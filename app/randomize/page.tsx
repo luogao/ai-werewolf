@@ -233,7 +233,7 @@ export default function RandomizePage() {
         </Card>
 
         {/* 模型池 */}
-        <Card className="mb-5 p-5">
+        <Card className="mb-5 p-5 relative" style={{ zIndex: 10 }}>
           <div className="flex items-center justify-between mb-3">
             <div className="text-sm font-semibold text-slate-200">模型池</div>
             <div className="flex gap-1.5">
