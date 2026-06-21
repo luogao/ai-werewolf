@@ -7,11 +7,14 @@ export interface CardProps {
   className?: string;
   /** 玻璃拟态（毛玻璃） */
   glass?: boolean;
+  /** 透传内联样式（用于 zIndex 等场景） */
+  style?: React.CSSProperties;
 }
 
-export function Card({ children, className, glass = true }: CardProps) {
+export function Card({ children, className, glass = true, style }: CardProps) {
   return (
     <div
+      style={style}
       className={clsx(
         'rounded-2xl border',
         glass

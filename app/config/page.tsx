@@ -422,7 +422,7 @@ function PlayerSlotEditor({
   const hasEndpointConfigured =
     (slot.baseUrl && slot.baseUrl.length > 0) || slot.record?.hasApiKey;
   return (
-    <Card className="p-4">
+    <Card className="p-4 relative" style={{ zIndex: 50 - position }}>
       <div className="flex items-start gap-3">
         <div className="flex flex-col items-center gap-1 shrink-0">
           <div className="h-10 w-10 rounded-full bg-gradient-to-b from-slate-700 to-slate-900 border border-slate-600 flex items-center justify-center text-sm font-bold text-slate-100">
