@@ -68,6 +68,10 @@ export interface PlayerConfig {
   model: string;
   name: string;
   personality?: string;
+  /** 自定义 OpenAI 兼容端点（Azure / vLLM / 多台 Ollama / 代理等）；留空走全局 env */
+  baseUrl?: string;
+  /** 自定义 API key（明文只在 server 内存留：DB players.api_key + 运行时 PlayerState） */
+  apiKey?: string;
 }
 
 export interface PlayerState {
@@ -77,6 +81,9 @@ export interface PlayerState {
   role: Role;
   personality: string;
   alive: boolean;
+  /** 透传自 PlayerConfig，AIPlayer 调 getModel 时用 */
+  baseUrl?: string;
+  apiKey?: string;
   // 女巫状态
   witchHasAntidote: boolean;
   witchHasPoison: boolean;
@@ -168,6 +175,8 @@ export function createPlayerState(config: PlayerConfig, role: Role): PlayerState
     role,
     personality: config.personality ?? '',
     alive: true,
+    baseUrl: config.baseUrl,
+    apiKey: config.apiKey,
     witchHasAntidote: role === 'witch',
     witchHasPoison: role === 'witch',
     hunterCanShoot: role === 'hunter',

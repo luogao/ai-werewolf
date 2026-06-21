@@ -22,10 +22,26 @@ export function getDb(): BetterSQLite3Database<typeof schema> {
   _db = drizzle(_raw, { schema });
   // 首次连接时建表 + 加载扩展（如果需要）
   _raw.exec(schema.SCHEMA_DDL);
+  // 老库迁移：为 players 表补列（重复执行会抛 "duplicate column"，吞掉即可）
+  migratePlayersColumns(_raw);
   // WAL 模式提升并发读写
   _raw.pragma('journal_mode = WAL');
   _raw.pragma('foreign_keys = ON');
   return _db;
+}
+
+/** 幂等地为老 DB 补 Phase 5 新增列；新库本来就有这些列，exec 会抛错被 try/catch 吞掉 */
+function migratePlayersColumns(raw: Database.Database): void {
+  for (const col of ['base_url TEXT', 'api_key TEXT']) {
+    try {
+      raw.exec(`ALTER TABLE players ADD COLUMN ${col}`);
+    } catch (e) {
+      const msg = (e as Error).message;
+      if (!msg.includes('duplicate column')) {
+        throw e;
+      }
+    }
+  }
 }
 
 export function getRaw(): Database.Database {

@@ -75,8 +75,20 @@ export const PROVIDERS: ProviderInfo[] = [
 /**
  * 把配置中的 modelId 解析成 LanguageModel 实例。
  * 抛错时给出明确的修复提示。
+ *
+ * 若传入 opts.baseURL 或 opts.apiKey，一律走 OpenAI 兼容协议（适用于 Azure / vLLM /
+ * 多台 Ollama / 第三方代理等）。留空时走前缀分发的默认 provider。
  */
-export function getModel(modelId: string): LanguageModel {
+export function getModel(
+  modelId: string,
+  opts?: { baseURL?: string; apiKey?: string },
+): LanguageModel {
+  // 自定义端点 → 走 OpenAI 兼容客户端
+  if (opts?.baseURL || opts?.apiKey) {
+    const baseURL = opts?.baseURL ?? 'https://api.openai.com/v1';
+    const apiKey = opts?.apiKey ?? process.env.OPENAI_API_KEY ?? '';
+    return createOpenAI({ name: 'custom', baseURL, apiKey })(modelId);
+  }
   if (modelId.startsWith('gpt') || modelId.startsWith('o1') || modelId.startsWith('o3') || modelId.startsWith('o4')) {
     return openai(modelId);
   }

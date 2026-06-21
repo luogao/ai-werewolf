@@ -17,6 +17,12 @@ export interface PlayerRecord {
   name: string;
   model: string;
   personality: string;
+  /** 自定义 OpenAI 兼容端点；undefined=走全局 env */
+  baseUrl?: string;
+  /** 脱敏字符串（`••••••` 或空串）—— 永远不是真实 key */
+  apiKey: string;
+  /** 标识是否已配置真实 key（用于 UI） */
+  hasApiKey: boolean;
   createdAt: number;
 }
 
@@ -123,10 +129,14 @@ async function request<T>(
 
 export const api = {
   listPlayers: () => request<{ players: PlayerRecord[] }>('/api/players'),
-  createPlayer: (input: { name: string; model: string; personality?: string }) =>
+  createPlayer: (input: { name: string; model: string; personality?: string; baseUrl?: string; apiKey?: string }) =>
     request<PlayerRecord>('/api/players', { method: 'POST', json: input }),
-  updatePlayer: (id: number, patch: Partial<Pick<PlayerRecord, 'name' | 'model' | 'personality'>>) =>
-    request<PlayerRecord>(`/api/players/${id}`, { method: 'PUT', json: patch }),
+  updatePlayer: (
+    id: number,
+    patch: Partial<Pick<PlayerRecord, 'name' | 'model' | 'personality' | 'baseUrl'>> & {
+      apiKey?: string;
+    },
+  ) => request<PlayerRecord>(`/api/players/${id}`, { method: 'PUT', json: patch }),
   deletePlayer: (id: number) =>
     request<{ ok: boolean }>(`/api/players/${id}`, { method: 'DELETE' }),
 

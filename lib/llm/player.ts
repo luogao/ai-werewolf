@@ -81,7 +81,10 @@ export class AIPlayer {
 
     let model: LanguageModel;
     try {
-      model = getModel(this.state.model);
+      model = getModel(this.state.model, {
+        baseURL: this.state.baseUrl,
+        apiKey: this.state.apiKey,
+      });
     } catch (e) {
       console.error(`[${this.name}] 无法解析模型 ${this.state.model}: ${(e as Error).message}`);
       this.lastUsage = null;

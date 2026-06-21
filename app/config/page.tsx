@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Trash2, Save, Play, Download, Dices, Users, ChevronLeft } from 'lucide-react';
+import { Trash2, Save, Play, Download, Dices, Users, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input, Textarea, Label } from '@/components/ui/Input';
 import { Card, Badge } from '@/components/ui/Card';
@@ -21,6 +21,10 @@ interface PlayerSlot {
   name: string;
   model: string;
   personality: string;
+  /** 自定义 OpenAI 兼容端点（Azure / vLLM / 多台 Ollama / 代理等） */
+  baseUrl: string;
+  /** 用户输入的 key（明文）；空串表示"不改/不填" */
+  apiKeyInput: string;
 }
 
 const DEFAULT_NAMES_BY_POS: Record<number, string> = {};
@@ -45,6 +49,8 @@ function emptySlot(pos: number, model = 'gpt-4o-mini'): PlayerSlot {
     name: DEFAULT_NAMES_BY_POS[pos] ?? randomName(pos),
     model,
     personality: '',
+    baseUrl: '',
+    apiKeyInput: '',
   };
 }
 
@@ -115,23 +121,45 @@ export default function ConfigPage() {
       const synced: PlayerConfig[] = [];
       for (let i = 0; i < slots.length; i++) {
         const s = slots[i];
-        const input = {
+        const baseUrl = s.baseUrl.trim();
+        const apiKeyInput = s.apiKeyInput;
+        // 已有记录时：apiKey 空输入 = 不改（undefined）；新记录时：apiKey 空 = 不设
+        const apiKey =
+          apiKeyInput === '' ? (s.record?.id ? undefined : '') : apiKeyInput;
+        const input: {
+          name: string;
+          model: string;
+          personality: string;
+          baseUrl?: string;
+          apiKey?: string;
+        } = {
           name: s.name.trim(),
           model: s.model.trim(),
           personality: s.personality.trim(),
+          baseUrl: baseUrl || undefined,
+          apiKey,
         };
         let rec: PlayerRecord;
         if (s.record?.id) {
-          rec = await api.updatePlayer(s.record.id, input);
+          // 已有记录：baseUrl 显式传（可能清空），apiKey undefined=不改
+          rec = await api.updatePlayer(s.record.id, {
+            name: input.name,
+            model: input.model,
+            personality: input.personality,
+            baseUrl: input.baseUrl ?? '',
+            apiKey,
+          });
         } else {
           rec = await api.createPlayer(input);
         }
         slots[i].record = rec;
+        slots[i].apiKeyInput = ''; // 保存后清空明文输入框
         synced.push({
           playerId: rec.id,
           name: rec.name,
           model: rec.model,
           personality: rec.personality,
+          baseUrl: rec.baseUrl,
         });
       }
 
@@ -190,6 +218,8 @@ export default function ConfigPage() {
         name: p.name,
         model: p.model,
         personality: p.personality ?? '',
+        baseUrl: p.baseUrl ?? '',
+        apiKeyInput: '',
       })),
     );
     setShowPresetModal(null);
@@ -388,6 +418,9 @@ function PlayerSlotEditor({
   position: number;
   onChange: (patch: Partial<PlayerSlot>) => void;
 }) {
+  const [showAdvanced, setShowAdvanced] = useState(false);
+  const hasEndpointConfigured =
+    (slot.baseUrl && slot.baseUrl.length > 0) || slot.record?.hasApiKey;
   return (
     <Card className="p-4">
       <div className="flex items-start gap-3">
@@ -441,6 +474,67 @@ function PlayerSlotEditor({
               rows={2}
               className="text-xs"
             />
+          </div>
+
+          {/* 高级：自定义端点 */}
+          <div className="pt-1">
+            <button
+              type="button"
+              onClick={() => setShowAdvanced((v) => !v)}
+              className="flex items-center gap-1.5 text-[11px] text-slate-400 hover:text-slate-200 transition"
+            >
+              <ChevronRight
+                className={
+                  'h-3 w-3 transition-transform ' + (showAdvanced ? 'rotate-90' : '')
+                }
+              />
+              自定义端点（Azure / vLLM / 多台 Ollama / 代理）
+              {hasEndpointConfigured && (
+                <span className="text-emerald-400 text-[10px]">● 已配置</span>
+              )}
+            </button>
+            <AnimatePresence>
+              {showAdvanced && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  className="overflow-hidden"
+                >
+                  <div className="pt-2 space-y-2">
+                    <div>
+                      <Label htmlFor={`url-${slot.localId}`}>Base URL</Label>
+                      <Input
+                        id={`url-${slot.localId}`}
+                        value={slot.baseUrl}
+                        onChange={(e) => onChange({ baseUrl: e.target.value })}
+                        placeholder="https://api.openai.com/v1（留空用全局）"
+                        className="font-mono text-xs"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor={`key-${slot.localId}`}>API Key</Label>
+                      <Input
+                        id={`key-${slot.localId}`}
+                        type="password"
+                        value={slot.apiKeyInput}
+                        onChange={(e) => onChange({ apiKeyInput: e.target.value })}
+                        placeholder={
+                          slot.record?.hasApiKey
+                            ? '••••••（已配置，留空保留）'
+                            : '留空使用全局环境变量'
+                        }
+                        className="font-mono text-xs"
+                      />
+                    </div>
+                    <p className="text-[10px] text-slate-500 leading-relaxed">
+                      所有自定义端点走 OpenAI 兼容协议。
+                      原生 Claude / DeepSeek 不受此配置影响。
+                    </p>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         </div>
       </div>

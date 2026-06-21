@@ -26,7 +26,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
   if (Number.isNaN(id)) {
     return NextResponse.json({ error: 'invalid id' }, { status: 400 });
   }
-  let body: { name?: string; model?: string; personality?: string };
+  let body: { name?: string; model?: string; personality?: string; baseUrl?: string; apiKey?: string };
   try {
     body = await req.json();
   } catch {

@@ -30,7 +30,7 @@ export async function GET() {
 export async function POST(req: Request) {
   let body: {
     layout?: string;
-    players?: Array<{ playerId?: number; name?: string; model?: string; personality?: string }>;
+    players?: Array<{ playerId?: number; name?: string; model?: string; personality?: string; baseUrl?: string }>;
     seed?: number | null;
     dryRun?: boolean;
     verbose?: boolean;
@@ -62,13 +62,19 @@ export async function POST(req: Request) {
     );
   }
 
-  // 规范化玩家配置
-  const playerConfigs = body.players.map((p, i) => ({
-    playerId: p.playerId ?? i + 1,
-    name: p.name ?? `玩家${i + 1}`,
-    model: p.model ?? 'gpt-4o-mini',
-    personality: p.personality ?? '',
-  }));
+  // 规范化玩家配置；apiKey 永远从 DB 取（客户端不传），baseUrl 可以从 body 来
+  const playerConfigs = body.players.map((p, i) => {
+    const playerId = p.playerId ?? i + 1;
+    const secret = db.getPlayerSecret(playerId);
+    return {
+      playerId,
+      name: p.name ?? `玩家${i + 1}`,
+      model: p.model ?? 'gpt-4o-mini',
+      personality: p.personality ?? '',
+      baseUrl: p.baseUrl ?? secret?.baseUrl ?? undefined,
+      apiKey: secret?.apiKey ?? undefined,
+    };
+  });
 
   // 校验 model 字段非空
   for (const p of playerConfigs) {

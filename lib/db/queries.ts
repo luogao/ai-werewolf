@@ -25,6 +25,12 @@ export interface PlayerRecord {
   name: string;
   model: string;
   personality: string;
+  /** 自定义 OpenAI 兼容端点；null/空表示走全局 env */
+  baseUrl?: string;
+  /** 永远脱敏（`••••••` 或空串）。真实 key 只通过 getPlayerSecret 取 */
+  apiKey: string;
+  /** 标识 DB 里是否真存了 key（用于 UI 显示"已配置"） */
+  hasApiKey: boolean;
   createdAt: number;
 }
 
@@ -38,6 +44,8 @@ export function createPlayer(input: {
   name: string;
   model: string;
   personality?: string;
+  baseUrl?: string;
+  apiKey?: string;
 }): PlayerRecord {
   const db = getDb();
   const row = db
@@ -46,6 +54,8 @@ export function createPlayer(input: {
       name: input.name,
       model: input.model,
       personality: input.personality ?? '',
+      baseUrl: input.baseUrl ?? null,
+      apiKey: input.apiKey ?? null,
     })
     .returning()
     .get();
@@ -54,13 +64,16 @@ export function createPlayer(input: {
 
 export function updatePlayer(
   id: number,
-  input: Partial<Pick<PlayerRecord, 'name' | 'model' | 'personality'>>,
+  input: Partial<Pick<PlayerRecord, 'name' | 'model' | 'personality' | 'baseUrl' | 'apiKey'>>,
 ): PlayerRecord | null {
   const db = getDb();
   const patch: Record<string, unknown> = {};
   if (input.name !== undefined) patch.name = input.name;
   if (input.model !== undefined) patch.model = input.model;
   if (input.personality !== undefined) patch.personality = input.personality;
+  if (input.baseUrl !== undefined) patch.baseUrl = input.baseUrl || null;
+  // apiKey 约定：undefined=不改；空串=清空；非空=更新
+  if (input.apiKey !== undefined) patch.apiKey = input.apiKey || null;
   if (Object.keys(patch).length === 0) {
     const existing = getPlayer(id);
     return existing;
@@ -90,6 +103,20 @@ export function getPlayer(id: number): PlayerRecord | null {
   return row ? rowToPlayer(row) : null;
 }
 
+/**
+ * 仅在 server 内部使用 —— 返回真实明文 apiKey（用于启动对局时注入 engine）。
+ * 永远不要让这个值进入 NextResponse 返回体。
+ */
+export function getPlayerSecret(id: number): { apiKey: string | null; baseUrl: string | null } | null {
+  const db = getDb();
+  const row = db
+    .select({ apiKey: playersTable.apiKey, baseUrl: playersTable.baseUrl })
+    .from(playersTable)
+    .where(eq(playersTable.id, id))
+    .get();
+  return row ? { apiKey: row.apiKey, baseUrl: row.baseUrl } : null;
+}
+
 export function bulkCreatePlayers(
   configs: Array<{ name: string; model: string; personality?: string }>,
 ): PlayerRecord[] {
@@ -117,6 +144,8 @@ function rowToPlayer(row: {
   name: string;
   model: string;
   personality: string;
+  baseUrl: string | null;
+  apiKey: string | null;
   createdAt: number;
 }): PlayerRecord {
   return {
@@ -124,6 +153,10 @@ function rowToPlayer(row: {
     name: row.name,
     model: row.model,
     personality: row.personality,
+    baseUrl: row.baseUrl ?? undefined,
+    // 脱敏：永远不把真实 key 透出 API
+    apiKey: row.apiKey ? '••••••' : '',
+    hasApiKey: !!row.apiKey,
     createdAt: row.createdAt,
   };
 }
@@ -158,7 +191,8 @@ export function createPreset(input: {
       name: input.name,
       description: input.description ?? '',
       layout: input.layout,
-      playersJson: JSON.stringify(input.players),
+      // 永远不持久化 apiKey（即便是用户存了预设）
+      playersJson: JSON.stringify(scrubApiKey(input.players)),
     })
     .returning()
     .get();
@@ -200,9 +234,15 @@ function rowToPreset(row: {
     name: row.name,
     description: row.description,
     layout: row.layout as Layout,
-    players,
+    // defense-in-depth：即便老数据里有 apiKey 也 map 掉
+    players: scrubApiKey(players),
     createdAt: row.createdAt,
   };
+}
+
+/** 从 PlayerConfig 数组里剥离 apiKey 字段（保留 baseUrl） */
+function scrubApiKey(players: PlayerConfig[]): PlayerConfig[] {
+  return players.map(({ apiKey: _ignored, ...rest }) => rest);
 }
 
 // ─── Games ────────────────────────────────────────────────────
@@ -235,7 +275,8 @@ export function createGame(input: {
       layout: input.layout,
       seed: input.seed ?? null,
       startedAt: now,
-      configJson: JSON.stringify(input.config),
+      // 永远不把 apiKey 持久化进 config_json
+      configJson: JSON.stringify(scrubApiKey(input.config)),
       status: 'pending',
       dryRun: input.dryRun ? 1 : 0,
     })
@@ -290,7 +331,8 @@ function rowToGame(row: GameRow): GameRecord {
     reason: row.reason,
     startedAt: row.startedAt,
     endedAt: row.endedAt,
-    config,
+    // defense-in-depth：即便老数据里混进了 apiKey 也 map 掉
+    config: scrubApiKey(config),
     status: row.status as GameRecord['status'],
     dryRun: Boolean(row.dryRun),
   };

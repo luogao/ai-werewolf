@@ -16,6 +16,10 @@ export const players = sqliteTable('players', {
   name: text('name').notNull(),
   model: text('model').notNull(),
   personality: text('personality').default('').notNull(),
+  /** 自定义 OpenAI 兼容端点（Azure/vLLM/Ollama 多实例/代理等） */
+  baseUrl: text('base_url'),
+  /** 自定义 API key（明文存储，本地 SQLite） */
+  apiKey: text('api_key'),
   createdAt: integer('created_at').notNull().default(sql`(unixepoch())`),
 });
 
@@ -70,6 +74,8 @@ CREATE TABLE IF NOT EXISTS players (
   name TEXT NOT NULL,
   model TEXT NOT NULL,
   personality TEXT NOT NULL DEFAULT '',
+  base_url TEXT,
+  api_key TEXT,
   created_at INTEGER NOT NULL DEFAULT (unixepoch())
 );
 

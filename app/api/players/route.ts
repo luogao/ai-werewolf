@@ -14,7 +14,7 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
-  let body: { name?: string; model?: string; personality?: string };
+  let body: { name?: string; model?: string; personality?: string; baseUrl?: string; apiKey?: string };
   try {
     body = await req.json();
   } catch {
@@ -30,6 +30,8 @@ export async function POST(req: Request) {
     name: body.name,
     model: body.model,
     personality: body.personality,
+    baseUrl: body.baseUrl,
+    apiKey: body.apiKey,
   });
   return NextResponse.json(player, { status: 201 });
 }
