@@ -46,7 +46,6 @@ export default function RandomizePage() {
   const router = useRouter();
   const [layout, setLayout] = useState<Layout>('9p');
   const [seed, setSeed] = useState<string>('');
-  const [dryRun, setDryRun] = useState(true);
   const [pool, setPool, hydrated] = useLocalStorage<PoolEntry[]>(STORAGE_KEY, []);
   const [starting, setStarting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -112,7 +111,7 @@ export default function RandomizePage() {
         layout,
         players: synced,
         seed: Number.isNaN(seedNum) ? null : seedNum,
-        dryRun,
+        dryRun: false,
       });
 
       router.push(`/play/${gameId}`);
@@ -154,7 +153,7 @@ export default function RandomizePage() {
 
         {/* 全局参数 */}
         <Card className="mb-5 p-5">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <Label>阵容规模</Label>
               <div className="flex flex-wrap gap-2">
@@ -191,27 +190,10 @@ export default function RandomizePage() {
                   <Dices className="h-3.5 w-3.5" />
                 </Button>
               </div>
-            </div>
-
-            <div>
-              <Label>模拟模式</Label>
-              <button
-                type="button"
-                onClick={() => setDryRun((v) => !v)}
-                className={
-                  'w-full flex items-center justify-between px-3 py-2 rounded-lg border text-xs transition ' +
-                  (dryRun
-                    ? 'bg-emerald-500/15 border-emerald-400/40 text-emerald-200'
-                    : 'bg-rose-500/15 border-rose-400/40 text-rose-200')
-                }
-              >
-                <span>{dryRun ? 'Dry-run（假 LLM）' : '真实 LLM 调用'}</span>
-                <span
-                  className={
-                    'h-2 w-2 rounded-full ' + (dryRun ? 'bg-emerald-400' : 'bg-rose-400')
-                  }
-                />
-              </button>
+              <div className="text-[11px] text-slate-500 mt-1.5 flex items-center gap-1.5">
+                <span className="h-1.5 w-1.5 rounded-full bg-rose-400" />
+                真实 LLM 调用（随机开局用于横向对比模型）
+              </div>
             </div>
           </div>
 
