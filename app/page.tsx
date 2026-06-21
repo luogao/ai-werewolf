@@ -18,6 +18,14 @@ export default function HomePage() {
             <div className="text-sm text-white/60 mt-1">选模型、起名字、设人格</div>
           </Link>
           <Link
+            href="/randomize"
+            className="block p-6 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 transition"
+          >
+            <div className="text-2xl mb-2">🎲</div>
+            <div className="font-semibold">随机开局</div>
+            <div className="text-sm text-white/60 mt-1">配模型池，随机分配角色</div>
+          </Link>
+          <Link
             href="/replay"
             className="block p-6 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 transition"
           >

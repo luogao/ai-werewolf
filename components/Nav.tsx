@@ -2,12 +2,13 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Skull, Home, Users, History, BarChart3 } from 'lucide-react';
+import { Skull, Home, Users, History, BarChart3, Shuffle } from 'lucide-react';
 import clsx from 'clsx';
 
 const LINKS = [
   { href: '/', label: '首页', icon: Home },
   { href: '/config', label: '配置', icon: Users },
+  { href: '/randomize', label: '随机', icon: Shuffle },
   { href: '/replay', label: '回放', icon: History },
   { href: '/stats', label: '统计', icon: BarChart3 },
 ];
