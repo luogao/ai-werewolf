@@ -487,3 +487,75 @@ export function getModelStats(): ModelStat[] {
 
   return Array.from(stats.values()).sort((a, b) => b.gamesPlayed - a.gamesPlayed);
 }
+
+// ─── Model × Role 聚合（热力图用） ─────────────────────────────
+
+export interface ModelRoleStat {
+  model: string;
+  role: Role;
+  games: number;
+  wins: number;
+}
+
+type Role = 'werewolf' | 'seer' | 'witch' | 'hunter' | 'guard' | 'villager';
+
+/**
+ * 聚合：每个 model 扮演每个 role 的局数 + 胜率。
+ *
+ * 胜负判定：该 role 所属阵营（werewolf → wolf；其他 → good）== game.winner。
+ * 若一个 model 在同一局扮多个角色（如 9 人局有两个同 model），每个 role 都独立计一次。
+ */
+export function getModelRoleStats(): ModelRoleStat[] {
+  const db = getDb();
+  const gameRows = db
+    .select()
+    .from(gamesTable)
+    .where(eq(gamesTable.status, 'done'))
+    .all();
+
+  const stats = new Map<string, ModelRoleStat>();
+  function key(model: string, role: Role) {
+    return `${model}::${role}`;
+  }
+  function ensure(model: string, role: Role): ModelRoleStat {
+    const k = key(model, role);
+    let s = stats.get(k);
+    if (!s) {
+      s = { model, role, games: 0, wins: 0 };
+      stats.set(k, s);
+    }
+    return s;
+  }
+
+  for (const g of gameRows) {
+    if (!g.winner) continue;
+    const startEvent = db
+      .select()
+      .from(eventsTable)
+      .where(and(eq(eventsTable.gameId, g.id), eq(eventsTable.type, 'game_start')))
+      .get();
+    if (!startEvent) continue;
+
+    let players: Array<{ playerId: number; model: string; role: string }> = [];
+    try {
+      const payload = JSON.parse(startEvent.payloadJson);
+      // game_start payload 的 players 有 playerId/name/model/role —— model 直接可用
+      players = payload.players ?? [];
+    } catch {
+      continue;
+    }
+
+    const winner = g.winner as 'wolf' | 'good' | 'draw';
+    for (const p of players) {
+      const role = p.role as Role;
+      if (!role || !p.model) continue;
+      const s = ensure(p.model, role);
+      s.games += 1;
+      const faction: 'wolf' | 'good' = role === 'werewolf' ? 'wolf' : 'good';
+      if (winner === faction) s.wins += 1;
+    }
+  }
+
+  return Array.from(stats.values());
+}
+

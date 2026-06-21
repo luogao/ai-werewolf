@@ -8,7 +8,7 @@ import type { PlayerConfig } from '../types';
 import type { Layout } from '../engine/presets';
 import type { GameEvent } from '../events';
 import type { ProviderInfo } from '../llm/providers';
-export type { ProviderInfo };
+export type { ProviderInfo, GameEvent };
 
 // ─── 类型（与 API 返回结构对齐） ──────────────────────────────
 
@@ -54,6 +54,15 @@ export interface ModelStat {
   totalTokens: number;
   totalDurationMs: number;
   callCount: number;
+}
+
+export type Role = 'werewolf' | 'seer' | 'witch' | 'hunter' | 'guard' | 'villager';
+
+export interface ModelRoleStat {
+  model: string;
+  role: Role;
+  games: number;
+  wins: number;
 }
 
 export interface CreateGameResponse {
@@ -152,4 +161,6 @@ export const api = {
     request<{ stats: ModelStat[]; totalGames: number }>(
       `/api/stats?minGames=${minGames}`,
     ),
+  getStatsByRole: () =>
+    request<{ stats: ModelRoleStat[] }>(`/api/stats/byRole`),
 };

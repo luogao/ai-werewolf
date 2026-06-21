@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import './globals.css';
+import { Nav } from '@/components/Nav';
 
 export const metadata: Metadata = {
   title: 'AI 狼人杀',
@@ -9,7 +10,10 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="zh-CN">
-      <body>{children}</body>
+      <body className="min-h-screen bg-slate-950 text-slate-100 antialiased">
+        <Nav />
+        {children}
+      </body>
     </html>
   );
 }
